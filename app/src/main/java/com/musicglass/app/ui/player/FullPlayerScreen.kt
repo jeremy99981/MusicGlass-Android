@@ -23,8 +23,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.requiredSize
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.gestures.detectVerticalDragGestures
@@ -44,10 +45,8 @@ import androidx.compose.material.icons.filled.VolumeDown
 import androidx.compose.material.icons.filled.VolumeUp
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FilledIconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.IconButtonDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.Slider
@@ -387,58 +386,71 @@ private fun FullPlayerScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
+            // Transport row: 3 buttons each with weight=1f for even spacing across ALL devices
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                PlayerTransportButton(
-                    enabled = canSkipPrevious,
-                    onClick = viewModel::previous,
-                    size = transportButtonSize
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Filled.SkipPrevious,
-                        contentDescription = "Précédent",
-                        tint = Color.White,
-                        modifier = Modifier.size(transportIconSize)
-                    )
-                }
-
-                FilledIconButton(
-                    onClick = viewModel::togglePlayPause,
-                    colors = IconButtonDefaults.filledIconButtonColors(
-                        containerColor = Color.White.copy(alpha = 0.16f),
-                        contentColor = Color.White
-                    ),
-                    modifier = Modifier.size(playButtonSize)
-                ) {
-                    if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            strokeWidth = 3.dp,
-                            modifier = Modifier.size(if (isUltraCompact) 26.dp else if (isVeryCompact) 30.dp else 34.dp)
-                        )
-                    } else {
+                    PlayerTransportButton(
+                        enabled = canSkipPrevious,
+                        onClick = viewModel::previous,
+                        size = transportButtonSize
+                    ) {
                         Icon(
-                            imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
-                            contentDescription = if (isPlaying) "Pause" else "Lecture",
-                            modifier = Modifier.size(playIconSize)
+                            Icons.Filled.SkipPrevious,
+                            contentDescription = "Précédent",
+                            tint = if (canSkipPrevious) Color.White else Color.White.copy(alpha = 0.32f),
+                            modifier = Modifier.size(transportIconSize)
                         )
                     }
                 }
 
-                PlayerTransportButton(
-                    enabled = canSkipNext,
-                    onClick = { viewModel.next() },
-                    size = transportButtonSize
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
-                    Icon(
-                        Icons.Filled.SkipNext,
-                        contentDescription = "Suivant",
-                        tint = Color.White,
-                        modifier = Modifier.size(transportIconSize)
-                    )
+                    FrostedCircleButton(
+                        onClick = viewModel::togglePlayPause,
+                        size = playButtonSize
+                    ) {
+                        if (isLoading) {
+                            CircularProgressIndicator(
+                                color = Color.White,
+                                strokeWidth = 3.dp,
+                                modifier = Modifier.size(if (isUltraCompact) 26.dp else if (isVeryCompact) 30.dp else 34.dp)
+                            )
+                        } else {
+                            Icon(
+                                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                contentDescription = if (isPlaying) "Pause" else "Lecture",
+                                tint = Color.White,
+                                modifier = Modifier.size(playIconSize)
+                            )
+                        }
+                    }
+                }
+
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.Center
+                ) {
+                    PlayerTransportButton(
+                        enabled = canSkipNext,
+                        onClick = { viewModel.next() },
+                        size = transportButtonSize
+                    ) {
+                        Icon(
+                            Icons.Filled.SkipNext,
+                            contentDescription = "Suivant",
+                            tint = if (canSkipNext) Color.White else Color.White.copy(alpha = 0.32f),
+                            modifier = Modifier.size(transportIconSize)
+                        )
+                    }
                 }
             }
 
@@ -477,15 +489,20 @@ private fun FullPlayerScreen(
 
             Spacer(modifier = Modifier.height(bottomActionsSpacer))
 
+            // Bottom row: Lyrics | [Repeat | Shuffle] | Queue
+            // Using weight for equal distribution regardless of phone size
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                FrostedCircleButton(onClick = { showLyrics = true }, size = circleButtonSize) {
-                    Icon(Icons.Filled.FormatQuote, contentDescription = "Paroles", tint = Color.White)
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterStart
+                ) {
+                    FrostedCircleButton(onClick = { showLyrics = true }, size = circleButtonSize) {
+                        Icon(Icons.Filled.FormatQuote, contentDescription = "Paroles", tint = Color.White)
+                    }
                 }
-
-                Spacer(modifier = Modifier.weight(1f))
 
                 Surface(
                     shape = RoundedCornerShape(999.dp),
@@ -522,15 +539,18 @@ private fun FullPlayerScreen(
                     }
                 }
 
-                Spacer(modifier = Modifier.weight(1f))
-
-                FrostedCircleButton(onClick = { showQueue = true }, size = circleButtonSize) {
-                    Icon(Icons.Filled.FormatListBulleted, contentDescription = "File d'attente", tint = Color.White)
+                Box(
+                    modifier = Modifier.weight(1f),
+                    contentAlignment = Alignment.CenterEnd
+                ) {
+                    FrostedCircleButton(onClick = { showQueue = true }, size = circleButtonSize) {
+                        Icon(Icons.Filled.FormatListBulleted, contentDescription = "File d'attente", tint = Color.White)
+                    }
                 }
             }
             Spacer(modifier = Modifier.height(if (isUltraCompact) 4.dp else 8.dp))
         }
-        
+
         if (showQueue) {
             ModalBottomSheet(
                 onDismissRequest = { showQueue = false },
@@ -544,7 +564,7 @@ private fun FullPlayerScreen(
                 )
             }
         }
-        
+
         if (showLyrics) {
             ModalBottomSheet(
                 onDismissRequest = { showLyrics = false },
@@ -750,7 +770,7 @@ private fun FrostedCircleButton(
     val interactionSource = remember { MutableInteractionSource() }
     Box(
         modifier = Modifier
-            .size(size)
+            .requiredSize(size)
             .clip(CircleShape)
             .background(Color.White.copy(alpha = 0.12f))
             .clickable(
@@ -771,15 +791,18 @@ private fun PlayerTransportButton(
     size: androidx.compose.ui.unit.Dp = 72.dp,
     content: @Composable () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
-        enabled = enabled,
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = Color.White,
-            disabledContentColor = Color.White.copy(alpha = 0.32f)
-        ),
-        modifier = Modifier.size(size)
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .requiredSize(size)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                enabled = enabled,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
     ) {
         content()
     }
@@ -792,13 +815,17 @@ private fun UtilityToggleButton(
     size: androidx.compose.ui.unit.Dp = 48.dp,
     content: @Composable () -> Unit
 ) {
-    IconButton(
-        onClick = onClick,
-        colors = IconButtonDefaults.iconButtonColors(
-            containerColor = Color.Transparent,
-            contentColor = if (active) Color.White else Color.White.copy(alpha = 0.72f)
-        ),
-        modifier = Modifier.size(size)
+    val interactionSource = remember { MutableInteractionSource() }
+    Box(
+        modifier = Modifier
+            .requiredSize(size)
+            .clip(CircleShape)
+            .clickable(
+                interactionSource = interactionSource,
+                indication = LocalIndication.current,
+                onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
     ) {
         content()
     }

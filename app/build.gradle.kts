@@ -16,10 +16,10 @@ android {
         applicationId = "com.musicglass.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 6
-        versionName = "0.0.6"
+        versionCode = 7
+        versionName = "0.0.7"
 
-        buildConfigField("String", "GITHUB_REPO", "\"jeremy99981/MusicGlass\"")
+        buildConfigField("String", "GITHUB_REPO", "\"jeremy99981/MusicGlass-Android\"")
     }
 
     signingConfigs {
@@ -31,19 +31,19 @@ android {
             }
 
             // Priority: keystore.properties -> Environment Variables -> Default Debug Key (fallback for local builds)
-            val path = properties.getProperty("storeFile") 
+            val path = properties.getProperty("storeFile")
                 ?: System.getenv("RELEASE_STORE_FILE")
-            
+
             storeFile = if (path != null) file(path) else file(System.getProperty("user.home") + "/.android/debug.keystore")
-            
+
             storePassword = properties.getProperty("storePassword")
                 ?: System.getenv("RELEASE_STORE_PASSWORD")
                 ?: "android"
-            
+
             keyAlias = properties.getProperty("keyAlias")
                 ?: System.getenv("RELEASE_KEY_ALIAS")
                 ?: "androiddebugkey"
-            
+
             keyPassword = properties.getProperty("keyPassword")
                 ?: System.getenv("RELEASE_KEY_PASSWORD")
                 ?: "android"
@@ -90,11 +90,11 @@ dependencies {
     implementation("androidx.compose.ui:ui-graphics")
     implementation("androidx.compose.ui:ui-tooling-preview")
     implementation("androidx.compose.material3:material3")
-    
+
     // Networking
     implementation("com.squareup.okhttp3:okhttp:4.12.0")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.2")
-    
+
     // ExoPlayer for Audio Playback
     implementation("androidx.media3:media3-exoplayer:1.2.0")
     implementation("androidx.media3:media3-session:1.2.0")
@@ -103,10 +103,10 @@ dependencies {
 
     // Image loading
     implementation("io.coil-kt:coil-compose:2.5.0")
-    
+
     // Coroutines
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-    
+
     // Navigation & Icons
     implementation("androidx.navigation:navigation-compose:2.7.5")
     implementation("androidx.compose.material:material-icons-extended")

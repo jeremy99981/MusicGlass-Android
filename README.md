@@ -5,7 +5,11 @@
 <h1 align="center">MusicGlass</h1>
 
 <p align="center">
-  <strong>Un lecteur de musique Android natif haut de gamme, doté d'une interface Material Design 3 sophistiquée et propulsé par YouTube Music.</strong>
+  🇬🇧 <strong>English</strong> | <a href="README.fr.md">🇫🇷 Français</a>
+</p>
+
+<p align="center">
+  <strong>A premium, native Android music player with a stunning Material Design 3 interface powered by YouTube Music.</strong>
 </p>
 
 <p align="center">

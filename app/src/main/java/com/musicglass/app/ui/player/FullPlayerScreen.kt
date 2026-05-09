@@ -509,6 +509,7 @@ private fun FullPlayerScreen(
                     color = Color.White.copy(alpha = 0.12f)
                 ) {
                     Row(
+                        modifier = Modifier.padding(horizontal = 4.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         UtilityToggleButton(

@@ -1,0 +1,8 @@
+Première version bêta de MusicGlass pour Android.
+Cette version contient les fonctionnalités de base :
+- Navigation et interface Material Design 3 calquée sur la version iOS
+- Accès aux playlists, recherche, tendances et recommandations
+- Intégration du système de mise à jour automatique via GitHub
+- Lecteur musical fonctionnel
+
+*Note : Ceci est une version bêta de test (debug build).*

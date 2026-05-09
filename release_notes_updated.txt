@@ -1,0 +1,8 @@
+Première version bêta multiplateforme de MusicGlass (iOS & Android).
+Cette version contient les fonctionnalités de base :
+- Navigation et interfaces natives (SwiftUI "Liquid Glass" sur iOS, Material Design 3 sur Android)
+- Accès aux playlists, recherche, tendances et recommandations (via YouTube Music)
+- Intégration du système de mise à jour automatique in-app via GitHub (Android)
+- Lecteur musical fonctionnel et synchronisation des historiques
+
+*Note : Ceci est une version bêta de test (build non signé pour iOS, debug build pour Android).*

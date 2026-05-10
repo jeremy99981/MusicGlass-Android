@@ -133,6 +133,15 @@ private fun FullPlayerScreen(
     val canSkipNext by viewModel.canSkipNext.collectAsState()
     val canSkipPrevious by viewModel.canSkipPrevious.collectAsState()
 
+    // Stabilize callbacks to prevent recomposition churn
+    val onPrevious = remember { { viewModel.previous() } }
+    val onNext = remember { { viewModel.next() } }
+    val onTogglePlayPause = remember { { viewModel.togglePlayPause() } }
+    val onCycleRepeat = remember { { viewModel.cycleRepeatMode() } }
+    val onToggleShuffle = remember { { viewModel.toggleShuffle() } }
+    val onSeek = remember { { pos: Long -> viewModel.seekTo(pos) } }
+    val onSetVolume = remember { { v: Float -> viewModel.setVolume(v) } }
+
     val artworkUrl = resolvedArtworkUrl(
         albumArtwork = currentSongInfo?.album?.thumbnails?.bestThumbnailUrl(),
         songArtwork = currentSongInfo?.thumbnails?.bestThumbnailUrl(),
@@ -209,7 +218,6 @@ private fun FullPlayerScreen(
         val handleSpacer = if (isUltraCompact) 0.dp else if (isVeryCompact) 2.dp else 6.dp
         val artworkSpacer = if (isUltraCompact) 6.dp else if (isVeryCompact) 8.dp else if (isCompact) 12.dp else 16.dp
         val sliderSpacer = if (isUltraCompact) 4.dp else if (isVeryCompact) 6.dp else 10.dp
-        val controlsTopSpacer = if (isUltraCompact) 4.dp else if (isVeryCompact) 6.dp else if (isCompact) 10.dp else 0.dp
         val controlsBottomSpacer = if (isUltraCompact) 4.dp else if (isVeryCompact) 6.dp else if (isCompact) 12.dp else 22.dp
         val bottomActionsSpacer = if (isUltraCompact) 4.dp else if (isVeryCompact) 6.dp else 12.dp
         val playButtonSize = if (isUltraCompact) 78.dp else if (isVeryCompact) 84.dp else if (isCompact) 90.dp else 96.dp
@@ -224,6 +232,26 @@ private fun FullPlayerScreen(
             maxHeight * if (isUltraCompact) 0.25f else if (isVeryCompact) 0.28f else if (isCompact) 0.32f else 0.38f,
             if (isUltraCompact) 190.dp else if (isVeryCompact) 220.dp else if (isCompact) 280.dp else 340.dp
         ).coerceAtLeast(if (isUltraCompact) 130.dp else 160.dp)
+
+        // Pre-compute colors for all icon states to avoid recomposition
+        val repeatIcon = remember(repeatMode) {
+            if (repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat
+        }
+        val repeatTint = remember(repeatMode) {
+            if (repeatMode != RepeatMode.OFF) Color.White else Color.White.copy(alpha = 0.72f)
+        }
+        val shuffleTint = remember(shuffleEnabled) {
+            if (shuffleEnabled) Color.White else Color.White.copy(alpha = 0.72f)
+        }
+        val prevTint = remember(canSkipPrevious) {
+            if (canSkipPrevious) Color.White else Color.White.copy(alpha = 0.32f)
+        }
+        val nextTint = remember(canSkipNext) {
+            if (canSkipNext) Color.White else Color.White.copy(alpha = 0.32f)
+        }
+        val playPauseIcon = remember(isPlaying) {
+            if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow
+        }
 
         if (artworkUrl != null) {
             AsyncImage(
@@ -350,7 +378,7 @@ private fun FullPlayerScreen(
                     sliderPosition = it
                 },
                 onValueChangeFinished = {
-                    viewModel.seekTo(sliderPosition.toLong())
+                    onSeek(sliderPosition.toLong())
                     isSeeking = false
                 },
                 valueRange = 0f..durationMs.toFloat().coerceAtLeast(0f).let { if (it <= 0f) 1f else it },
@@ -386,7 +414,7 @@ private fun FullPlayerScreen(
                 Spacer(modifier = Modifier.weight(1f))
             }
 
-            // Transport row: 3 buttons each with weight=1f for even spacing across ALL devices
+            // Transport row — stabilized with pre-computed values
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly,
@@ -398,13 +426,13 @@ private fun FullPlayerScreen(
                 ) {
                     PlayerTransportButton(
                         enabled = canSkipPrevious,
-                        onClick = viewModel::previous,
+                        onClick = onPrevious,
                         size = transportButtonSize
                     ) {
                         Icon(
                             Icons.Filled.SkipPrevious,
                             contentDescription = "Précédent",
-                            tint = if (canSkipPrevious) Color.White else Color.White.copy(alpha = 0.32f),
+                            tint = prevTint,
                             modifier = Modifier.size(transportIconSize)
                         )
                     }
@@ -415,7 +443,7 @@ private fun FullPlayerScreen(
                     contentAlignment = Alignment.Center
                 ) {
                     FrostedCircleButton(
-                        onClick = viewModel::togglePlayPause,
+                        onClick = onTogglePlayPause,
                         size = playButtonSize
                     ) {
                         if (isLoading) {
@@ -426,7 +454,7 @@ private fun FullPlayerScreen(
                             )
                         } else {
                             Icon(
-                                imageVector = if (isPlaying) Icons.Filled.Pause else Icons.Filled.PlayArrow,
+                                imageVector = playPauseIcon,
                                 contentDescription = if (isPlaying) "Pause" else "Lecture",
                                 tint = Color.White,
                                 modifier = Modifier.size(playIconSize)
@@ -441,13 +469,13 @@ private fun FullPlayerScreen(
                 ) {
                     PlayerTransportButton(
                         enabled = canSkipNext,
-                        onClick = { viewModel.next() },
+                        onClick = onNext,
                         size = transportButtonSize
                     ) {
                         Icon(
                             Icons.Filled.SkipNext,
                             contentDescription = "Suivant",
-                            tint = if (canSkipNext) Color.White else Color.White.copy(alpha = 0.32f),
+                            tint = nextTint,
                             modifier = Modifier.size(transportIconSize)
                         )
                     }
@@ -468,7 +496,7 @@ private fun FullPlayerScreen(
                     )
                     Slider(
                         value = volume,
-                        onValueChange = { viewModel.setVolume(it) },
+                        onValueChange = onSetVolume,
                         valueRange = 0f..1f,
                         colors = SliderDefaults.colors(
                             thumbColor = Color.White,
@@ -490,7 +518,8 @@ private fun FullPlayerScreen(
             Spacer(modifier = Modifier.height(bottomActionsSpacer))
 
             // Bottom row: Lyrics | [Repeat | Shuffle] | Queue
-            // Using weight for equal distribution regardless of phone size
+            // Pre-computed heights for the pill container to guarantee stability
+            val pillHeight = utilityButtonSize // same as button height, no stretching
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically
@@ -506,21 +535,24 @@ private fun FullPlayerScreen(
 
                 Surface(
                     shape = RoundedCornerShape(999.dp),
-                    color = Color.White.copy(alpha = 0.12f)
+                    color = Color.White.copy(alpha = 0.12f),
+                    modifier = Modifier.height(pillHeight)
                 ) {
                     Row(
-                        modifier = Modifier.padding(horizontal = 4.dp),
+                        modifier = Modifier
+                            .padding(horizontal = 4.dp)
+                            .height(pillHeight),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         UtilityToggleButton(
                             active = repeatMode != RepeatMode.OFF,
-                            onClick = viewModel::cycleRepeatMode,
+                            onClick = onCycleRepeat,
                             size = utilityButtonSize
                         ) {
                             Icon(
-                                imageVector = if (repeatMode == RepeatMode.ONE) Icons.Filled.RepeatOne else Icons.Filled.Repeat,
+                                imageVector = repeatIcon,
                                 contentDescription = "Répétition",
-                                tint = if (repeatMode != RepeatMode.OFF) Color.White else Color.White.copy(alpha = 0.72f)
+                                tint = repeatTint
                             )
                         }
 
@@ -528,13 +560,13 @@ private fun FullPlayerScreen(
 
                         UtilityToggleButton(
                             active = shuffleEnabled,
-                            onClick = viewModel::toggleShuffle,
+                            onClick = onToggleShuffle,
                             size = utilityButtonSize
                         ) {
                             Icon(
                                 Icons.Filled.Shuffle,
                                 contentDescription = "Aléatoire",
-                                tint = if (shuffleEnabled) Color.White else Color.White.copy(alpha = 0.72f)
+                                tint = shuffleTint
                             )
                         }
                     }

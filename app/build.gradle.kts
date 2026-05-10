@@ -16,8 +16,8 @@ android {
         applicationId = "com.musicglass.app"
         minSdk = 26
         targetSdk = 34
-        versionCode = 8
-        versionName = "0.0.8"
+        versionCode = 9
+        versionName = "0.0.9"
 
         buildConfigField("String", "GITHUB_REPO", "\"jeremy99981/MusicGlass-Android\"")
     }

@@ -28,11 +28,13 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
@@ -200,7 +202,8 @@ fun SearchScreen(
     viewModel: SearchViewModel = viewModel(),
     onSongClick: (SongItem, List<SongItem>) -> Unit,
     onRadio: (SongItem) -> Unit,
-    onNavigate: (SongItem) -> Unit
+    onNavigate: (SongItem) -> Unit,
+    onAIAssistant: () -> Unit = {}
 ) {
     val state by viewModel.state.collectAsState()
     val songs = state.results.filter { it.type == ItemType.SONG }
@@ -215,7 +218,16 @@ fun SearchScreen(
                 title = { Text("Recherche") },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = MaterialTheme.colorScheme.background
-                )
+                ),
+                actions = {
+                    IconButton(onClick = onAIAssistant) {
+                        Icon(
+                            imageVector = Icons.Filled.AutoAwesome,
+                            contentDescription = "Assistant IA",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
             )
         }
     ) { padding ->

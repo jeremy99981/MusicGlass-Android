@@ -37,6 +37,8 @@ import com.musicglass.app.core.update.ChangelogDialog
 import com.musicglass.app.core.update.UpdateAvailableDialog
 import com.musicglass.app.core.update.UpdateCheckState
 import com.musicglass.app.core.update.UpdateViewModel
+import com.musicglass.app.ui.features.AIAssistantScreen
+import com.musicglass.app.ui.features.AIAssistantViewModel
 import com.musicglass.app.ui.features.AlbumScreen
 import com.musicglass.app.ui.features.ArtistScreen
 import com.musicglass.app.ui.features.HomeScreen
@@ -80,7 +82,7 @@ fun MainScreen() {
     val playerViewModel: com.musicglass.app.playback.PlayerViewModel = viewModel()
     val updateViewModel: UpdateViewModel = viewModel()
     val settingsViewModel: SettingsViewModel = viewModel()
-    
+
     val currentTrack by playerViewModel.currentTrack.collectAsState()
     val currentSongInfo by playerViewModel.currentSongInfo.collectAsState()
     val isLoading by playerViewModel.isLoading.collectAsState()
@@ -89,7 +91,7 @@ fun MainScreen() {
     val showBottomBar = currentDestination?.route != "login"
     var showFullPlayer by rememberSaveable { mutableStateOf(false) }
     var showProfileSheet by rememberSaveable { mutableStateOf(false) }
-    
+
     val scope = rememberCoroutineScope()
     val innerTubeClient = remember { InnerTubeClient() }
     val mapper = remember { InnerTubeJSONMapper() }
@@ -122,7 +124,7 @@ fun MainScreen() {
             showFullPlayer = false
         }
     }
-    
+
     Box(modifier = Modifier.fillMaxSize()) {
         Scaffold(
             contentWindowInsets = WindowInsets(0, 0, 0, 0),
@@ -223,6 +225,9 @@ fun MainScreen() {
                         onRadio = { item -> playerViewModel.playRadio(item) },
                         onNavigate = { item ->
                             navigateToMedia(item)
+                        },
+                        onAIAssistant = {
+                            navController.navigate("ai_assistant")
                         }
                     )
                 }
@@ -253,7 +258,7 @@ fun MainScreen() {
                                             .firstOrNull { it.type == ItemType.ARTIST }
                                             ?.browseId
                                     }.getOrNull()
-                                    
+
                                     if (!resolvedId.isNullOrBlank()) {
                                         navController.navigate("artist/${Uri.encode(resolvedId)}")
                                     }
@@ -268,6 +273,22 @@ fun MainScreen() {
                         updateViewModel = updateViewModel
                     )
                 }
+                                composable("ai_assistant") {
+                    val aiViewModel = remember {
+                        AIAssistantViewModel(innerTubeClient, mapper)
+                    }
+                    AIAssistantScreen(
+                        viewModel = aiViewModel,
+                        onDismiss = { navController.popBackStack() },
+                        onPlayTrack = { item, queue ->
+                            playerViewModel.playSongItem(item, queue)
+                        },
+                        onPlayRadio = { item ->
+                            playerViewModel.playRadio(item)
+                        }
+                    )
+                }
+
                 composable("login") {
                     LoginWebViewScreen(
                         onLoginSuccess = {
@@ -459,9 +480,9 @@ fun MiniPlayer(
                     .clip(RoundedCornerShape(8.dp))
                     .background(MaterialTheme.colorScheme.primaryContainer))
             }
-            
+
             Spacer(modifier = Modifier.width(12.dp))
-            
+
             Column(modifier = Modifier.weight(1f)) {
                 Text(
                     text = resolvedTitle(),
@@ -482,7 +503,7 @@ fun MiniPlayer(
                     overflow = TextOverflow.Ellipsis
                 )
             }
-            
+
             if (isLoading) {
                 CircularProgressIndicator(
                     modifier = Modifier.size(24.dp),

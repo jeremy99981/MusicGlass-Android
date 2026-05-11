@@ -9,7 +9,6 @@ import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
@@ -19,12 +18,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Keyboard
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material.icons.filled.Refresh
-import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -54,18 +53,32 @@ fun AIAssistantScreen(
     val state by viewModel.state.collectAsState()
     val transcript by viewModel.transcript.collectAsState()
     val textInput by viewModel.textInput.collectAsState()
+    val playAction by viewModel.playAction.collectAsState()
 
-    // Close when playing (after short delay)
-    LaunchedEffect(state) {
-        if (state is AIAssistantState.Playing) {
-            kotlinx.coroutines.delay(800)
-            onDismiss()
+    // Execute playback action when resolved
+    LaunchedEffect(playAction) {
+        when (val action = playAction) {
+            is AIPlayAction.PlayTrack -> {
+                onPlayTrack(action.track, action.queue)
+                viewModel.consumePlayAction()
+                kotlinx.coroutines.delay(400)
+                onDismiss()
+            }
+            is AIPlayAction.PlayRadio -> {
+                onPlayRadio(action.track)
+                viewModel.consumePlayAction()
+                kotlinx.coroutines.delay(400)
+                onDismiss()
+            }
+            null -> {}
         }
     }
 
     Column(
         modifier = Modifier
             .fillMaxSize()
+            .statusBarsPadding()
+            .navigationBarsPadding()
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
@@ -82,7 +95,6 @@ fun AIAssistantScreen(
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sparkle badge
             Box(
                 modifier = Modifier
                     .size(40.dp)
@@ -286,7 +298,6 @@ private fun ListeningContent(
     ) {
         Spacer(Modifier.height(40.dp))
 
-        // Animated wave circle
         val infiniteTransition = rememberInfiniteTransition("wave")
         val scale by infiniteTransition.animateFloat(
             initialValue = 1f,
@@ -396,9 +407,7 @@ private fun AlbumChoicesContent(
     onSelect: (SongItem) -> Unit,
     onCancel: () -> Unit
 ) {
-    Column(
-        modifier = Modifier.fillMaxSize()
-    ) {
+    Column(modifier = Modifier.fillMaxSize()) {
         Spacer(Modifier.height(20.dp))
         Text(
             question,
@@ -514,7 +523,6 @@ private fun TextInputContent(
 
         Spacer(Modifier.height(20.dp))
 
-        // Inline text field with send button
         val borderColor by animateColorAsState(
             targetValue = if (textInput.isNotEmpty())
                 MaterialTheme.colorScheme.primary

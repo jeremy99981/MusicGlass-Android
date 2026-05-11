@@ -12,12 +12,9 @@ import com.musicglass.app.youtubemusic.DeepSeekException
 import com.musicglass.app.youtubemusic.DeepSeekMusicIntentService
 import com.musicglass.app.youtubemusic.InnerTubeClient
 import com.musicglass.app.youtubemusic.InnerTubeJSONMapper
-import com.musicglass.app.youtubemusic.MusicAIIntent
 import com.musicglass.app.youtubemusic.MusicAIResolution
 import com.musicglass.app.youtubemusic.MusicAIResolver
 import com.musicglass.app.youtubemusic.SongItem
-import com.musicglass.app.playback.MusicGlassPlaybackController
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
@@ -33,6 +30,11 @@ sealed class AIAssistantState {
     data class Playing(val title: String) : AIAssistantState()
     data class TextInput(val message: String?) : AIAssistantState()
     data class Error(val message: String) : AIAssistantState()
+}
+
+sealed class AIPlayAction {
+    data class PlayTrack(val track: SongItem, val queue: List<SongItem>) : AIPlayAction()
+    data class PlayRadio(val track: SongItem) : AIPlayAction()
 }
 
 class AIAssistantViewModel(
@@ -52,12 +54,19 @@ class AIAssistantViewModel(
     private val _textInput = MutableStateFlow("")
     val textInput: StateFlow<String> = _textInput
 
+    private val _playAction = MutableStateFlow<AIPlayAction?>(null)
+    val playAction: StateFlow<AIPlayAction?> = _playAction
+
     private var speechRecognizer: SpeechRecognizer? = null
     private var isListening = false
     private var isStarting = false
 
     fun updateTextInput(text: String) {
         _textInput.value = text
+    }
+
+    fun consumePlayAction() {
+        _playAction.value = null
     }
 
     fun setState(newState: AIAssistantState, reason: String = "") {
@@ -73,7 +82,6 @@ class AIAssistantViewModel(
         viewModelScope.launch {
             setState(AIAssistantState.CheckingPermissions, "User tapped start")
 
-            // Check if speech recognition is available
             if (!SpeechRecognizer.isRecognitionAvailable(context)) {
                 setState(AIAssistantState.TextInput("Reconnaissance vocale indisponible. Vous pouvez écrire votre demande."),
                     "Speech recognition not available")
@@ -119,11 +127,8 @@ class AIAssistantViewModel(
             }
 
             override fun onBeginningOfSpeech() {}
-
             override fun onRmsChanged(rmsdB: Float) {}
-
             override fun onBufferReceived(buffer: ByteArray?) {}
-
             override fun onEndOfSpeech() {}
 
             override fun onError(error: Int) {
@@ -204,15 +209,13 @@ class AIAssistantViewModel(
     private fun handleResolution(resolution: MusicAIResolution) {
         when (resolution) {
             is MusicAIResolution.PlayableTrack -> {
+                _playAction.value = AIPlayAction.PlayTrack(resolution.track, resolution.queue)
                 setState(AIAssistantState.Playing(resolution.track.title), "Playing track")
-                viewModelScope.launch {
-                    MusicGlassPlaybackController.get(android.app.Application())
-                    // We'll handle this via callback
-                }
             }
             is MusicAIResolution.PlayableAlbum -> {
                 val tracks = resolution.tracks
                 if (tracks.isNotEmpty()) {
+                    _playAction.value = AIPlayAction.PlayTrack(tracks.first(), tracks)
                     setState(AIAssistantState.Playing(tracks.first().title), "Playing album")
                 } else {
                     setState(AIAssistantState.Error("L'album est vide."), "Empty album")
@@ -221,12 +224,14 @@ class AIAssistantViewModel(
             is MusicAIResolution.PlayablePlaylist -> {
                 val tracks = resolution.tracks
                 if (tracks.isNotEmpty()) {
+                    _playAction.value = AIPlayAction.PlayTrack(tracks.first(), tracks)
                     setState(AIAssistantState.Playing(tracks.first().title), "Playing playlist")
                 } else {
                     setState(AIAssistantState.Error("La playlist est vide."), "Empty playlist")
                 }
             }
             is MusicAIResolution.PlayableRadio -> {
+                _playAction.value = AIPlayAction.PlayRadio(resolution.track)
                 setState(AIAssistantState.Playing(resolution.track.title), "Radio")
             }
             is MusicAIResolution.AlbumList -> {
@@ -259,10 +264,10 @@ class AIAssistantViewModel(
                         "Missing browseId")
                     return@launch
                 }
-                // Search for album tracks via playlist queue
                 val json = innerTubeClient.getPlaylistQueue(browseId)
                 val tracks = mapper.mapSearchResults(json)
                 if (tracks.isNotEmpty()) {
+                    _playAction.value = AIPlayAction.PlayTrack(tracks.first(), tracks)
                     setState(AIAssistantState.Playing(tracks.first().title), "Playing selected album")
                 } else {
                     setState(AIAssistantState.Error("Album vide."), "Empty selected album")
@@ -282,6 +287,7 @@ class AIAssistantViewModel(
         isStarting = false
         _transcript.value = ""
         _textInput.value = ""
+        _playAction.value = null
         setState(AIAssistantState.Idle, "Reset")
     }
 

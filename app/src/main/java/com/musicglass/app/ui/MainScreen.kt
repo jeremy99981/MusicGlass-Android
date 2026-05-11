@@ -282,9 +282,11 @@ fun MainScreen() {
                         onDismiss = { navController.popBackStack() },
                         onPlayTrack = { item, queue ->
                             playerViewModel.playSongItem(item, queue)
+                            showFullPlayer = true
                         },
                         onPlayRadio = { item ->
                             playerViewModel.playRadio(item)
+                            showFullPlayer = true
                         }
                     )
                 }

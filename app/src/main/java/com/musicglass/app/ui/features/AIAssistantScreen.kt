@@ -55,19 +55,17 @@ fun AIAssistantScreen(
     val textInput by viewModel.textInput.collectAsState()
     val playAction by viewModel.playAction.collectAsState()
 
-    // Execute playback action when resolved
+    // Execute playback action - dismiss immediately, player takes over
     LaunchedEffect(playAction) {
         when (val action = playAction) {
             is AIPlayAction.PlayTrack -> {
                 onPlayTrack(action.track, action.queue)
                 viewModel.consumePlayAction()
-                kotlinx.coroutines.delay(400)
                 onDismiss()
             }
             is AIPlayAction.PlayRadio -> {
                 onPlayRadio(action.track)
                 viewModel.consumePlayAction()
-                kotlinx.coroutines.delay(400)
                 onDismiss()
             }
             null -> {}
@@ -172,7 +170,7 @@ fun AIAssistantScreen(
                     onSelect = { viewModel.selectAlbum(it) },
                     onCancel = { viewModel.reset() }
                 )
-                is AIAssistantState.Playing -> PlayingContent(s.title)
+
                 is AIAssistantState.TextInput -> TextInputContent(
                     message = s.message,
                     textInput = textInput,
@@ -183,6 +181,7 @@ fun AIAssistantScreen(
                         viewModel.startAssistant(context)
                     }
                 )
+                is AIAssistantState.Playing -> { /* Handled by LaunchedEffect(playAction) */ }
                 is AIAssistantState.Error -> ErrorContent(
                     message = s.message,
                     onRetry = { viewModel.reset() }
@@ -588,43 +587,7 @@ private fun TextInputContent(
     }
 }
 
-@Composable
-private fun PlayingContent(title: String) {
-    Column(
-        horizontalAlignment = Alignment.CenterHorizontally,
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Spacer(Modifier.height(40.dp))
 
-        Box(
-            modifier = Modifier
-                .size(80.dp)
-                .clip(CircleShape)
-                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.12f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                Icons.Filled.MusicNote,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(36.dp)
-            )
-        }
-
-        Spacer(Modifier.height(20.dp))
-
-        Text(
-            "Lecture en cours...",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold
-        )
-        Text(
-            title,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
-}
 
 @Composable
 private fun ErrorContent(
